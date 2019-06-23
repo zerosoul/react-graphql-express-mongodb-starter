@@ -1,11 +1,30 @@
 import React, { Component } from "react";
 import styled from "styled-components";
+import gql from "graphql-tag";
+import { Query } from "react-apollo";
 
 import Modal from "../components/Modal/Modal";
 import Backdrop from "../components/Backdrop/Backdrop";
 import EventList from "../components/Events/EventList/EventList";
 import Spinner from "../components/Spinner/Spinner";
 import AuthContext from "../context/auth-context";
+
+const GET_EVENTS = gql`
+  {
+    events {
+      _id
+      title
+      description
+      date
+      price
+      creator {
+        _id
+        email
+      }
+    }
+  }
+`;
+let EVENTS = [];
 const StyledEventControl = styled.div`
   text-align: center;
   border: 1px solid #5101d1;
@@ -31,10 +50,6 @@ class EventsPage extends Component {
     this.priceElRef = React.createRef();
     this.dateElRef = React.createRef();
     this.descriptionElRef = React.createRef();
-  }
-
-  componentDidMount() {
-    this.fetchEvents();
   }
 
   startCreateEventHandler = () => {
@@ -121,58 +136,10 @@ class EventsPage extends Component {
     this.setState({ creating: false, selectedEvent: null });
   };
 
-  fetchEvents() {
-    this.setState({ isLoading: true });
-    const requestBody = {
-      query: `
-          query {
-            events {
-              _id
-              title
-              description
-              date
-              price
-              creator {
-                _id
-                email
-              }
-            }
-          }
-        `
-    };
-
-    fetch("http://localhost:8000/graphql", {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then(res => {
-        if (res.status !== 200 && res.status !== 201) {
-          throw new Error("Failed!");
-        }
-        return res.json();
-      })
-      .then(resData => {
-        const events = resData.data.events;
-        if (this.isActive) {
-          this.setState({ events: events, isLoading: false });
-        }
-      })
-      .catch(err => {
-        console.log(err);
-        if (this.isActive) {
-          this.setState({ isLoading: false });
-        }
-      });
-  }
-
   showDetailHandler = eventId => {
-    this.setState(prevState => {
-      const selectedEvent = prevState.events.find(e => e._id === eventId);
-      return { selectedEvent: selectedEvent };
-    });
+    const selectedEvent = EVENTS.find(e => e._id === eventId);
+    console.log(selectedEvent);
+    this.setState({ selectedEvent: selectedEvent });
   };
 
   bookEventHandler = () => {
@@ -285,15 +252,23 @@ class EventsPage extends Component {
             </button>
           </StyledEventControl>
         )}
-        {this.state.isLoading ? (
-          <Spinner />
-        ) : (
-          <EventList
-            events={this.state.events}
-            authUserId={this.context.userId}
-            onViewDetail={this.showDetailHandler}
-          />
-        )}
+        <Query query={GET_EVENTS}>
+          {({ loading, error, data }) => {
+            if (loading) return <Spinner />;
+            if (error) return `Error! ${error.message}`;
+            EVENTS = data.events;
+            {
+              /* this.setState({ events: data.events }); */
+            }
+            return (
+              <EventList
+                events={data.events}
+                authUserId={this.context.userId}
+                onViewDetail={this.showDetailHandler}
+              />
+            );
+          }}
+        </Query>
       </>
     );
   }

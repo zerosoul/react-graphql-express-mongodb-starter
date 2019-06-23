@@ -1,8 +1,8 @@
-const DataLoader = require('dataloader');
+const DataLoader = require("dataloader");
 
-const Event = require('../../models/event');
-const User = require('../../models/user');
-const { dateToString } = require('../../helpers/date');
+const Event = require("../../models/event");
+const User = require("../../models/user");
+const { dateToString } = require("../../helpers/date");
 
 const eventLoader = new DataLoader(eventIds => {
   return events(eventIds);
@@ -72,7 +72,3 @@ const transformBooking = booking => {
 
 exports.transformEvent = transformEvent;
 exports.transformBooking = transformBooking;
-
-// exports.user = user;
-// exports.events = events;
-// exports.singleEvent = singleEvent;
